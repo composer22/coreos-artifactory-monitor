@@ -1,0 +1,37 @@
+[Unit]
+Description=coreos-artifactory-monitor
+After=docker.service
+Requires=docker.service
+
+[Service]
+Restart=on-abnormal
+TimeoutStartSec=0
+KillMode=none
+EnvironmentFile=/etc/environment
+ExecStartPre=-/usr/bin/docker kill coreos_artifactory_monitor
+ExecStartPre=-/usr/bin/docker rm coreos_artifactory_monitor
+ExecStartPre=-/usr/bin/docker rmi composer22/coreos-artifactory-monitor
+ExecStartPre=/usr/bin/docker pull composer22/coreos-artifactory-monitor
+ExecStart=/usr/bin/bash -c \
+"/usr/bin/docker run -v /tmp:/tmp --name=coreos_artifactory_monitor \
+ -p ${COREOS_PRIVATE_IPV4}:8082:8080 -h `hostname` \
+  composer22/coreos-artifactory-monitor -p 8080 -H 0.0.0.0 -X 2  \
+ -s `etcdctl get /example.com/services/coreos-artifactory-monitor/props/deploy-url` \
+ -k `etcdctl get /example.com/services/coreos-artifactory-monitor/props/deploy-token` \
+ -a `etcdctl get /example.com/services/coreos-artifactory-monitor/props/art-endpoint` \
+ -u `etcdctl get /example.com/services/coreos-artifactory-monitor/props/art-userid` \
+ -w `etcdctl get /example.com/services/coreos-artifactory-monitor/props/art-password` \
+ -g `etcdctl get /example.com/services/coreos-artifactory-monitor/props/art-polling` \
+ -t `etcdctl get /example.com/services/coreos-artifactory-monitor/props/art_image_repo` \
+ -y `etcdctl get /example.com/services/coreos-artifactory-monitor/props/art_payload_repo` \
+ -N `etcdctl get /example.com/services/coreos-artifactory-monitor/props/server-name` \
+ -O `etcdctl get /example.com/services/coreos-artifactory-monitor/props/domain` \
+ -E `etcdctl get /example.com/services/coreos-artifactory-monitor/props/environment` \
+ --dsn `etcdctl get /example.com/services/coreos-artifactory-monitor/props/dsn`"
+ExecStop=-/usr/bin/docker stop coreos_artifactory_monitor
+ExecStopPost=-/usr/bin/docker rm coreos_artifactory_monitor
+ExecStopPost=-/usr/bin/docker rmi composer22/coreos-artifactory-monitor
+
+[X-Fleet]
+MachineMetadata=role=control
+Conflicts=coreos-artifactory-monitor.service
