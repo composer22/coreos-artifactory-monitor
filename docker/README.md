@@ -30,3 +30,6 @@ docker run -v /tmp:/tmp --name=coreos_artifactory_monitor \
 
 see composer22/coreos-artifactory-monitor/coreos-artifactory-monitor.service for an example of
 how to write your own service file for your CoreOS cluster.
+
+You should run this docker container on the control or service part of your cluster.
+NOTE: Only one instance should be run per cluster at any time, as more than one could conflict.

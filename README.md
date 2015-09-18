@@ -154,6 +154,43 @@ with the same name as the tar.gz. For example:
 For more tech detail and examples, such as the template mechanism provided by coreos-client library,
 please see the [coreos-deploy](http://github.com/composer22/coreos-deploy) and [coreos-deploy-client](http://github.com/composer22/coreos-deploy-client) projects.
 
+## HTTP API
+
+Header for services other than /health should contain:
+
+* Accept: application/json
+* Authorization: Bearer with token
+* Content-Type: application/json
+
+The bearer tokens are stored in artifactory_auth_tokens in the database.
+
+Example cURL:
+
+```
+$ curl -i -H "Accept: application/json" \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer S0M3B3EARERTOK3N" \
+-X GET "http://0.0.0.0:8080/v1.0/info"
+
+HTTP/1.1 200 OK
+Content-Type: application/json;charset=utf-8
+Date: Fri, 03 Apr 2015 17:29:17 +0000
+Server: San Francisco
+X-Request-Id: DC8D9C2E-8161-4FC0-937F-4CA7037970D5
+Content-Length: 0
+```
+
+Three API routes are provided for service measurement:
+
+* http://localhost:8080/v1.0/health - GET: Is the server alive?
+* http://localhost:8080/v1.0/info - GET: What are the params of the server?
+* http://localhost:8080/v1.0/metrics - GET: What performance and statistics are from the server?
+
+Calling the following API will force the server to check for new deploys immediately
+instead of waiting a polling interval set by -g or --art_polling:
+
+* http://localhost:8080/v1.0/force - GET: Check for new deploys immediately. Don't wait.
+
 ## Building
 
 This code currently requires version 1.42 or higher of Go.
@@ -194,6 +231,7 @@ if available.
 See /docker directory README for more information on how to run it.
 
 You should run this docker container on the control or service part of your cluster.
+NOTE: Only one instance should be run per cluster at any time.
 
 ## License
 
