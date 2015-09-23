@@ -28,7 +28,7 @@ func (s *Server) Monitor() {
 			return
 		case <-s.force: // Force a check for deltas. Don't wait.
 			timer.Stop()
-			//		case <-timer.C: // Timeout.
+		case <-timer.C: // Timeout.
 		}
 
 		// Get changes.
@@ -73,7 +73,7 @@ func (s *Server) checkDeltas(wg *sync.WaitGroup) ([]*DeployWorker, error) {
 		return nil, err
 	}
 
-	// Check each folder find the latest deploy version and add it to the deploy list if needed.
+	// Check each folder for the latest deploy version and add it to the deploy list if needed.
 	for _, app := range apps {
 		// dir equates as "reponame" + "/appname" => "foorepo/appname"
 		dir := fmt.Sprintf("%s%s", s.opts.ArtDeployRepo, app.Uri)
@@ -143,7 +143,7 @@ func (s *Server) getArtFolders(subdir string, retrieveFolders bool) ([]*ArtFolde
 	return results, nil
 }
 
-// sendRequest sends a request to a server and prints the result.
+// sendRequest sends a request to a server and returns the result.
 func (s *Server) sendRequest(req *http.Request) (string, error) {
 	cl := &http.Client{}
 	resp, err := cl.Do(req)

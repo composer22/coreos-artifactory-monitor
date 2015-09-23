@@ -75,7 +75,7 @@ func (d *DBConnect) UpdateDeployByName(domain string, environment string, name s
 		"SET deploy_id = ?, "+
 		"status = ?, "+
 		"updated_at = NOW() "+
-		"WHERE domain = ?, environment = ?, service_name = ?",
+		"WHERE domain = ? AND environment = ? AND service_name = ?",
 		deployID, status, domain, environment, name)
 	if err != nil {
 		return false

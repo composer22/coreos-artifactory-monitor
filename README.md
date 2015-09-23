@@ -68,8 +68,9 @@ assets associated with the deploy process, and what the server is expecting whil
 artifactory.
 
 ### Repository structure
+
 Two repositories should be set up in Artifactor. The first should contains .tar files for each version and environment.
-These tar files should contain the etcd2 keys and .service file and metadata. The second repo acts as a deploy
+These tar files should contain the etcd2 keys, .service file and metadata. The second repo acts as a deploy
 request front. The service monitors the second repository for any version changes within an application folder.
 If a change is noticed, it will look in the corresponding payload repo for a .tar file for the application and version,
 uncompress it, and use the information contained to submit the deploy request.
@@ -90,8 +91,8 @@ The repositories on artifactory should follow the following best practice patter
 # Payload repository:
 /payload-repo-name/
   /appimage-name
-     /domain-environment-appname-versiontagA.tar.gz
-	 /domain-environment-appname-versiontagB.tar.gz
+     /domain-environment-appimage-name-versiontagA.tar.gz
+	 /domain-environment-appimage-name-versiontagB.tar.gz
 	 ...
 
 # Docker repository:
@@ -124,19 +125,39 @@ The repositories on artifactory should follow the following best practice patter
 	 /1.0.1-22
      ...
 ```
+Notice the semantic commonality between appimage-name and version.
+
 The .deploy file above is simply a "touched" file that indicates a version has been posted and ready to be deployed
-to a particular environment. It is essentially empty. It might contain information in the future. The tar.gz files
-contain all information related to the deploy for an environment.
+to a particular environment. The file itself not checked for content and can be empty. We might utilize
+information in the future, so best not to include any information in there. Sumply create a file in this environment
+with a new named version + .deploy and the server will try and deploy it using the corresponding tar.gz from the
+payload repo.
+
+The tar.gz files contain all information needed for the deploy to an environment.
 
 ### Payload requirements
 
 The .tar should contain ONLY the following files:
 
-* metadata file (1 required) - a json file describing the deploy need for that version in a particular environment.
+* metadata file (1 required) - a .json file describing the deploy need for that version in a particular environment.
 * service file(1 required) - a fleetctl .service or .service.tmpl file that describes how to launch the docker image in the cluster.
-* etcd2 file (1 optional) - a file containing etc2 key/values that need to be added or changed for this version to work in the environment.
-* README.md (1 optional) - a file describing the release and any notes.
+* etcd2 file (1 optional) - a file containing etc2 key/values (.etcd2) that need to be added or changed for this version to work in the environment.
+* README.md (1 optional) - a file describing the release and any notes. Not used in processing. Informational only.
 
+For example of these files see the enclosed: example.com-development-video-mobile-1.0.1-22.tar.gz
+
+Only one type of each file should be included in the tar.gz. Names are ignored.
+
+The naming convention of the tar.gz is mandatory:
+
+<domain>-<environment>-<appimage-name>-<version>.tar.gz
+```
+example.com-development-video-mobile-1.0.1-22.tar.gz
+```
+The directory contained in the tar.gz should likewise be named the same:
+```
+example.com-development-video-mobile-1.0.1-22/
+```
 ### Metadata file
 
 The metadata file should contain the following json attributes and should have a .json extention. Only one .json
@@ -145,17 +166,17 @@ file should be in the tar.gz.
 * name - the name of the application being deployed. This should match the name of the .service unit file.
 * version - the version of the service to deploy. This is used when launching the service unit/template.
 * imageVersion - should match the Docker image. Usually this is the same as 'version'
-* numInstance - the number of coreos units to launch in the cluster for this environment.
+* numInstances - the number of coreos units to launch in the cluster for this environment.
 
 Example:
 
 ```
-video-mobile.metadata.json
+example.com-development-video-mobile-1.0.1-22.metadata.metadata.json
 {
-  "name":"video-mobile",
+  "name":"example-video-mobile",
   "version":"1.0.1-22",
   "imageVersion":"1.0.1-22",
-  "numInstance": 2
+  "numInstances": 2
 }
 ```
 ### .service, .service.tmpl, and .etcd2 key files.
@@ -164,16 +185,18 @@ These files should follow these naming conventions although they can be named an
 as long as there is only one file type within the tar.gz. They should untar into a directory
 with the same name as the tar.gz. For example:
 ```
-example.com-development-video-mobile-1.0.1-22.tar.gze
+example.com-development-video-mobile-1.0.1-22.tar.gz
 /example.com-development-video-mobile-1.0.1-22/
   example.com-development-video-mobile-1.0.1-22.etcd2
   example.com-development-video-mobile.metadata.json
-  video-mobile-1.0.1-22@.service
+  example-video-mobile-1.0.1-22@.service
   - or -
-  video-mobile-1.0.1-22@.service.tmpl
+  example-video-mobile-1.0.1-22@.service.tmpl
 
   README.md
 ```
+Again, for an example, see the enclosed: example.com-development-video-mobile-1.0.1-22.tar.gz
+
 For more tech detail and examples, such as the template mechanism provided by coreos-client library,
 please see the [coreos-deploy](http://github.com/composer22/coreos-deploy) and [coreos-deploy-client](http://github.com/composer22/coreos-deploy-client) projects.
 
@@ -254,7 +277,8 @@ if available.
 See /docker directory README for more information on how to run it.
 
 You should run this docker container on the control or service part of your cluster.
-NOTE: Only one instance should be run per cluster at any time.
+NOTE: Only one instance should be run per cluster at any time, since there is no locking mechanism
+to prevent multiple deploys for the same service request.
 
 ## License
 

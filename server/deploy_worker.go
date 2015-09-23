@@ -209,7 +209,7 @@ func (d *DeployWorker) submitDeployRequest(cl *coscl.Client) (string, string) {
 	result := struct {
 		DeployID string `json:"deployID"` // The UUID of the deploy.
 	}{}
-	err = json.Unmarshal([]byte(resp), result)
+	err = json.Unmarshal([]byte(resp), &result)
 	if err != nil {
 		return "", fmt.Sprintf("Cannot parse returned deploy id: %s", err.Error())
 	}
