@@ -1,12 +1,12 @@
 FROM gliderlabs/alpine
 MAINTAINER Bryan-Kirk Reinhardt
 RUN \
-apk --update add bash curl tar ca-certificates && \
+apk --update add bash curl ca-certificates && \
   mkdir -p /usr/local/bin/coreos-artifactory-monitor && \
   mkdir -p /tmp/coreos-artifactory-monitor/
 ADD coreos-artifactory-monitor /usr/local/bin/coreos-artifactory-monitor/coreos-artifactory-monitor
 CMD []
-ENTRYPOINT ["/coreos-artifactory-monitor/coreos-artifactory-monitor", "-p", "8080", "-H", "0.0.0.0", \
+ENTRYPOINT ["/usr/local/bin/coreos-artifactory-monitor/coreos-artifactory-monitor", "-p", "8080", "-H", "0.0.0.0", \
  "-X", "2",  "-s", "http://dev-coreos.example.com:80 ", "-k", "D3Pl0YT0Ken", "-a", \
 "https://example.artifactoryonline.com/exampletest/api", "-u", "sysadm", "-w", "letmein", \
 "-g", "600", "-t", "cluster-deploys-development", "-y", "cluster-payloads", "-N", "San Francisco", \
