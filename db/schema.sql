@@ -40,7 +40,7 @@ CREATE TABLE `artifactory_auth_tokens` (
 DROP TABLE IF EXISTS `artifactory_deploys`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-/* note status: Started = 1, Failed = 2, Success = 3
+/* note status: Started = 1, Success = 2, Failed = 3 */;
 CREATE TABLE `artifactory_deploys` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT 'The unique identifier for each row.',
   `deploy_id` varchar(255) NOT NULL COMMENT 'The last UUID assigned to this deployment.',

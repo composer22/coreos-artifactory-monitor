@@ -18,7 +18,7 @@ type Options struct {
 	ArtUserID          string `json:"-"`                  // The artifactory user id.
 	ArtPassword        string `json:"-"`                  // The artifactory password.
 	ArtPollingInterval int    `json:"artPollingInterval"` // The artifactory polling interval in seconds.
-	ArtImageRepo       string `json:"artImageRepo"`       // The artifactory repo of the Docker Images.
+	ArtDeployRepo      string `json:"artDeployRepo"`      // The artifactory repo of the deploy request files.
 	ArtPayloadRepo     string `json:"artPayloadRepo"`     // The artifactory repo of the deployment payloads.
 	Port               int    `json:"port"`               // The default port of the server.
 	ProfPort           int    `json:"profPort"`           // The profiler port of the server.
@@ -45,8 +45,8 @@ func (o *Options) Validate() error {
 	if o.ArtUserID == "" {
 		return errors.New("Artifactory API user id is mandatory.")
 	}
-	if o.ArtImageRepo == "" {
-		return errors.New("Artifactory API docker image repo name is mandatory.")
+	if o.ArtDeployRepo == "" {
+		return errors.New("Artifactory API deploy request repo name is mandatory.")
 	}
 	if o.ArtPayloadRepo == "" {
 		return errors.New("Artifactory API payload repo is mandatory.")

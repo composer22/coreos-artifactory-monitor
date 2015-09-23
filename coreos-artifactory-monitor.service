@@ -22,8 +22,8 @@ ExecStart=/usr/bin/bash -c \
  -u `etcdctl get /example.com/services/coreos-artifactory-monitor/props/art-userid` \
  -w `etcdctl get /example.com/services/coreos-artifactory-monitor/props/art-password` \
  -g `etcdctl get /example.com/services/coreos-artifactory-monitor/props/art-polling` \
- -t `etcdctl get /example.com/services/coreos-artifactory-monitor/props/art_image_repo` \
- -y `etcdctl get /example.com/services/coreos-artifactory-monitor/props/art_payload_repo` \
+ -t `etcdctl get /example.com/services/coreos-artifactory-monitor/props/art-deploy-repo` \
+ -y `etcdctl get /example.com/services/coreos-artifactory-monitor/props/art-payload-repo` \
  -N `etcdctl get /example.com/services/coreos-artifactory-monitor/props/server-name` \
  -O `etcdctl get /example.com/services/coreos-artifactory-monitor/props/domain` \
  -E `etcdctl get /example.com/services/coreos-artifactory-monitor/props/environment` \
@@ -34,4 +34,4 @@ ExecStopPost=-/usr/bin/docker rmi composer22/coreos-artifactory-monitor
 
 [X-Fleet]
 MachineMetadata=role=control
-Conflicts=coreos-artifactory-monitor.service
+Conflicts=coreos-artifactory-monitor@.service

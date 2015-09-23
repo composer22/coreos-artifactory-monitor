@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"sync"
 	"time"
 
@@ -48,26 +49,25 @@ func (d *DeployWorker) Run() {
 	// Write the start of job record to the DB.
 	d.db.StartDeploy(d.Opts.Domain, d.Opts.Environment, d.Name, d.Version)
 
-	// file name format example: foo.com-development-video-mobile-1.0.1-23.tar.gz
+	// Build standard file name ex: foo.com-development-video-mobile-1.0.1-23.tar.gz
 	tarFilePrefix := fmt.Sprintf("%s-%s-%s-%s", d.Opts.Domain, d.Opts.Environment, d.Name, d.Version)
 	tarFileName := fmt.Sprintf("%s.tar.gz", tarFilePrefix)
 
-	// evaluates as "/tmp/" + "Appname" => "/tmp/Appname/"
-	tarPath := fmt.Sprintf("%s%s/", tmpDir, d.Name)
-	// evaluates as "/tmp/Appname/" + "foo.tar.gz" => "/tmp/Appname/foo.tar.gz"
-	tarFilePath := fmt.Sprintf("%s%s", tarPath, tarFileName)
+	tarPath := fmt.Sprintf("%s%s/", tmpDir, d.Name)          // evaluates as "/tmp/" + "Appname" => "/tmp/Appname/"
+	tarFilePath := fmt.Sprintf("%s%s", tarPath, tarFileName) // evaluates as "/tmp/Appname/" + "foo.tar.gz" => "/tmp/Appname/foo.tar.gz"
+
 	if err := os.MkdirAll(tarPath, 0744); err != nil {
 		d.log.Errorf("Cannot make tar temp path %s: %s", tarPath, err.Error())
 		d.db.UpdateDeployByName(d.Opts.Domain, d.Opts.Environment, d.Name, "", cosddb.Failed)
 		return
 	}
-
 	// Download and untar the assets for this deploy from Artifactory.
-	if errMsg := d.downloadAssets(tarFilePath, tarFileName); errMsg != "" {
+	if errMsg := d.downloadAssets(tarPath, tarFilePath, tarFileName); errMsg != "" {
 		d.log.Errorf(errMsg)
 		d.db.UpdateDeployByName(d.Opts.Domain, d.Opts.Environment, d.Name, "", cosddb.Failed)
 		return
 	}
+
 	defer os.Remove(tarFilePath)
 	// evaluates as "/tmp/Appname/" + "foo.com-development-video-mobile-1.0.1-23" + "/"
 	untarredPath := fmt.Sprintf("%s%s/", tarPath, tarFilePrefix)
@@ -129,6 +129,7 @@ func (d *DeployWorker) Run() {
 		Url:              d.Opts.DeployURL,
 		Debug:            false,
 	}
+
 	cl := coscl.New(co) // API client
 	deployID, errMsg := d.submitDeployRequest(cl)
 	if errMsg != "" {
@@ -152,12 +153,14 @@ func (d *DeployWorker) Run() {
 }
 
 // downloadAssets retrieves and untars the assets from the Artifactory repository.
-func (d *DeployWorker) downloadAssets(tarFilePath string, tarFileName string) string {
-	httpPath := fmt.Sprintf("%s/%s/%s/%s", d.Opts.ArtAPIEndpoint, d.Opts.ArtPayloadRepo, d.Name, tarFileName)
+func (d *DeployWorker) downloadAssets(tarPath string, tarFilePath string, tarFileName string) string {
+	artFilePath := strings.Replace(d.Opts.ArtAPIEndpoint, "/api", "", 1) // No API.
+	httpPath := fmt.Sprintf("%s/%s/%s/%s", artFilePath, d.Opts.ArtPayloadRepo, d.Name, tarFileName)
 	req, err := http.NewRequest(httpGet, httpPath, nil)
 	if err != nil {
 		return fmt.Sprintf("Cannot create request for %s: %s", httpPath, err.Error())
 	}
+	req.SetBasicAuth(d.Opts.ArtUserID, d.Opts.ArtPassword)
 	cl := &http.Client{}
 	resp, err := cl.Do(req)
 	if err != nil {
@@ -174,7 +177,7 @@ func (d *DeployWorker) downloadAssets(tarFilePath string, tarFileName string) st
 	}
 
 	// Untar the assets.
-	cmd := exec.Command("tar", "-xvzf", tarFilePath)
+	cmd := exec.Command("tar", "-xzf", tarFilePath, "-C", tarPath)
 	if _, err := execCmd(cmd); err != nil {
 		return fmt.Sprintf("Cannot untar file %s: %s", tarFilePath, err.Error())
 	}
@@ -188,7 +191,7 @@ func (d *DeployWorker) getMetaData(metaFilePath string) (*coscl.ServiceTemplateV
 	if err != nil {
 		return nil, fmt.Sprintf("Cannot read metadata from %s: %s", metaFilePath, err.Error())
 	}
-	err = json.Unmarshal(m, metaData)
+	err = json.Unmarshal(m, &metaData)
 	if err != nil {
 		return nil, fmt.Sprintf("Cannot parse metadata from %s: %s", metaFilePath, err.Error())
 	}
@@ -204,7 +207,7 @@ func (d *DeployWorker) submitDeployRequest(cl *coscl.Client) (string, string) {
 	}
 
 	result := struct {
-		DeployID string `json:"numInstances"` // The UUID of the deploy.
+		DeployID string `json:"deployID"` // The UUID of the deploy.
 	}{}
 	err = json.Unmarshal([]byte(resp), result)
 	if err != nil {
@@ -224,7 +227,7 @@ func (d *DeployWorker) submitStatusRequest(cl *coscl.Client, deployID string) st
 		if err != nil {
 			return fmt.Sprintf("Could not submit status request for deployID %s", deployID, err.Error())
 		}
-		err = json.Unmarshal([]byte(resp), stat)
+		err = json.Unmarshal([]byte(resp), &stat)
 		if err != nil {
 			return fmt.Sprintf("Could not parse status response for deployID %s: %s", deployID, err.Error())
 		}

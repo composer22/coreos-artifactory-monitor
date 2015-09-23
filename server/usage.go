@@ -17,12 +17,12 @@ Server options:
     -E, --environment ENVIRONMENT    ENVIRONMENT (development, qa, staging, production).
     -s, --deploy_url URL             URL to the coreos-deploy service.
     -k, --deploy_token TOKEN         Security TOKEN to access the coreos-deploy service.
-    -a, --artif_endpoint APIURL      The base APIURL to the artifactory API service.
-    -u, --artif_userid USERID        USERID to login to the artifactory API service.
-    -w, --artif_password PASSWORD    PASSWORD to login to the artifactory API service.
-    -g, --artif_polling INTERVAL     How often to check artifactory for deploys in INTERVAL seconds (default: 300 sec).
-    -t, --artif_image_repo REPO      The name of the REPO where Docker images are stored for deploys.
-    -y, --artif_payload_repo REPO    The name of the REPO where .tar.gz (service, meta, etcd2) files are stored.
+    -a, --art_endpoint APIURL        The base APIURL to the artifactory API service.
+    -u, --art_userid USERID          USERID to login to the artifactory API service.
+    -w, --art_password PASSWORD      PASSWORD to login to the artifactory API service.
+    -g, --art_polling INTERVAL       How often to check artifactory for deploys in INTERVAL seconds (default: 300 sec).
+    -t, --art_deploy_repo REPO       The name of the REPO where the deploy request files are stored.
+    -y, --art_payload_repo REPO      The name of the REPO where .tar.gz (service, meta, etcd2) files are stored.
 	-p, --port PORT                  PORT to listen on (default: 8080).
     -L, --profiler_port PORT         *PORT the profiler is listening on (default: off).
     -X, --procs MAX                  *MAX processor cores to use from the machine.
@@ -41,7 +41,7 @@ Example:
     coreos-deploy -N "San Francisco" -H 0.0.0.0 -O example.com -E development \
 	  -s http://dev-coreos.example.com:80 -k D3Pl0YT0Ken \
 	  -a https://example.artifactoryonline.com/exampletest/api \
-	  -u sysadm -w letmein -g 600 -t docker-v2-local-dev -y payload-v2-local-dev \
+	  -u sysadm -w letmein -g 600 -t cluster-deploys-dev -y cluster-payloads \
 	  -p 8080 -X 2 --dsn "id:password@tcp(your-amazonaws-uri.com:3306)/dbname"
 
 	for DSN usage, see https://github.com/go-sql-driver/mysql

@@ -21,8 +21,8 @@ docker run -v /tmp:/tmp --name=coreos_artifactory_monitor \
  -u sysadm \
  -w letmein \
  -g 600 \
- -t docker-v2-local-dev \
- -y payload-v2-local-dev \
+ -t cluster-deploys-development \
+ -y cluster-payloads \
  -N "San Francisco" \
  -O example.com \
  -E development \

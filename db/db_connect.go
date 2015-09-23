@@ -103,7 +103,7 @@ type DeployStatus struct {
 func (d *DBConnect) QueryDeployByName(domain string, environment string, name string) (*DeployStatus, error) {
 	r := &DeployStatus{}
 	row := d.db.QueryRow("SELECT deploy_id, domain, environment, service_name, version, status, updated_at, created_at "+
-		"FROM artifactory_deploys WHERE name = ?", name)
+		"FROM artifactory_deploys WHERE service_name = ?", name)
 	err := row.Scan(&r.DeployID, &r.Domain, &r.Environment, &r.Name, &r.Version, &r.Status, &r.UpdatedAt, &r.CreatedAt)
 	switch {
 	case err == sql.ErrNoRows:

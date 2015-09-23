@@ -46,8 +46,8 @@ func main() {
 	flag.StringVar(&opts.ArtPassword, "art_password", "", "Artifactory Password.")
 	flag.IntVar(&opts.ArtPollingInterval, "g", server.DefaultPollingInterval, "Artifactory polling time in seconds.")
 	flag.IntVar(&opts.ArtPollingInterval, "art_polling", server.DefaultPollingInterval, "Artifactory polling time in seconds.")
-	flag.StringVar(&opts.ArtImageRepo, "t", "", "Name of the repo for docker images.")
-	flag.StringVar(&opts.ArtImageRepo, "art_image_repo", "", "Name of the repo for docker images.")
+	flag.StringVar(&opts.ArtDeployRepo, "t", "", "Name of the repo for deploy requests.")
+	flag.StringVar(&opts.ArtDeployRepo, "art_deploy_repo", "", "Name of the repo for deploy requests.")
 	flag.StringVar(&opts.ArtPayloadRepo, "y", "", "Name of the repo for payloads.")
 	flag.StringVar(&opts.ArtPayloadRepo, "art_payload_repo", "", "Name of the repo for payloads.")
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -27,7 +28,7 @@ func (s *Server) Monitor() {
 			return
 		case <-s.force: // Force a check for deltas. Don't wait.
 			timer.Stop()
-		case <-timer.C: // Timeout.
+			//		case <-timer.C: // Timeout.
 		}
 
 		// Get changes.
@@ -35,7 +36,6 @@ func (s *Server) Monitor() {
 		if err != nil {
 			s.log.Errorf("Check Deltas Error: %s", err.Error())
 		}
-
 		// run the deploys.
 		for _, d := range deploys {
 			go d.Run()
@@ -67,50 +67,50 @@ type ArtFolderInfoChild struct {
 func (s *Server) checkDeltas(wg *sync.WaitGroup) ([]*DeployWorker, error) {
 	jobs := make([]*DeployWorker, 0)
 
-	// Get image names from repo.
-	images, err := s.getArtFolders(s.opts.ArtImageRepo)
+	// Get folders names from repo.
+	apps, err := s.getArtFolders(s.opts.ArtDeployRepo, true)
 	if err != nil {
 		return nil, err
 	}
 
-	// Check each image for the latest version and add it to the deploy list if needed.
-	for _, image := range images {
-		// dir equates as "reponame" + "/docker-image-version" => "foorepo/1.0.0-23"
-		dir := fmt.Sprintf("%s%s", s.opts.ArtImageRepo, image.Uri)
-		versions, err := s.getArtFolders(dir)
+	// Check each folder find the latest deploy version and add it to the deploy list if needed.
+	for _, app := range apps {
+		// dir equates as "reponame" + "/appname" => "foorepo/appname"
+		dir := fmt.Sprintf("%s%s", s.opts.ArtDeployRepo, app.Uri)
+		versions, err := s.getArtFolders(dir, false)
 		if err != nil {
 			s.log.Errorf("Unable to read directory %s: %s", dir, err.Error())
 			continue
 		}
-		// Find the latest version tag for this image.
+		// Find the latest version tag for this application.
 		var latestVersion string = ""
 		for _, iv := range versions {
 			if iv.Uri > latestVersion {
 				latestVersion = iv.Uri
 			}
 		}
-		imageName := strings.Replace(image.Uri, "/", "", 1)
+		appName := strings.Replace(app.Uri, "/", "", 1)
 		latestVersion = strings.Replace(latestVersion, "/", "", 1)
+		latestVersion = strings.Replace(latestVersion, ".deploy", "", 1)
 
 		// Check the last version deployed from the database.
-		lastDep, err := s.db.QueryDeployByName(s.opts.Domain, s.opts.Environment, imageName)
+		lastDep, err := s.db.QueryDeployByName(s.opts.Domain, s.opts.Environment, appName)
 		if err != nil && err != sql.ErrNoRows {
 			s.log.Errorf("Unable to read deploy from db for %s-%s-%s: %s", s.opts.Domain,
-				s.opts.Environment, imageName, err.Error())
+				s.opts.Environment, appName, err.Error())
 			continue
 		}
-		// If no version has been deployed, or it's out of date, or it failed before
-		// then create a new job.
+		// If no version has been deployed, or it's out of date, or it failed before then create a new job.
 		if err != nil || lastDep.Version < latestVersion ||
 			(lastDep.Version == latestVersion && lastDep.Status == cosddb.Failed) {
-			jobs = append(jobs, NewDeployWorker(imageName, latestVersion, s.opts, s.log, s.db, wg))
+			jobs = append(jobs, NewDeployWorker(appName, latestVersion, s.opts, s.log, s.db, wg))
 		}
 	}
 	return jobs, nil
 }
 
-// getArtFolders retrieves a list of folders from the Artifactory directory path.
-func (s *Server) getArtFolders(subdir string) ([]*ArtFolderInfoChild, error) {
+// getArtFolders retrieves a list from the Artifactory directory path contents.
+func (s *Server) getArtFolders(subdir string, retrieveFolders bool) ([]*ArtFolderInfoChild, error) {
 	results := make([]*ArtFolderInfoChild, 0)
 	// evaluates as "http://art.com/foo/api" + "/storage" + "/" + "sub/directory"
 	req, err := http.NewRequest(httpGet, fmt.Sprintf("%s%s/%s/", s.opts.ArtAPIEndpoint, artSourceRoute, subdir), nil)
@@ -123,14 +123,19 @@ func (s *Server) getArtFolders(subdir string) ([]*ArtFolderInfoChild, error) {
 		return nil, err
 	}
 	var fi ArtFolderInfo
-	err = json.Unmarshal([]byte(resp), fi)
+	err = json.Unmarshal([]byte(resp), &fi)
 	if err != nil {
 		return nil, err
 	}
 
-	// Filter out files or folders named "latest"
+	// Retrieve content of subdir.
 	for _, c := range fi.Children {
-		if c.Folder == false || c.Uri == "/latest" {
+		// Filter out files vs folders.
+		if c.Folder != retrieveFolders {
+			continue
+		}
+		// If file check and not a deploy file, continue scan.
+		if !retrieveFolders && path.Ext(c.Uri) != ".deploy" {
 			continue
 		}
 		results = append(results, c)
